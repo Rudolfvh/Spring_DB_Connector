@@ -4,22 +4,30 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.example.spring.entity.Company;
 import org.example.spring.entity.User;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.util.Optional;
 
-@RequiredArgsConstructor
+@Repository
 public class UserRepository {
 
     private final Connection connection;
     private final String FIND_BY_ID;
 
+    public UserRepository(Connection connection,
+                          @Qualifier("findUserById") String findByIdQuery) {
+        this.connection = connection;
+        FIND_BY_ID = findByIdQuery;
+    }
+
     @SneakyThrows
     public Optional<User> findById(Long id) {
         try (connection;
              var prepareStatement = connection.prepareStatement(FIND_BY_ID)) {
-            User user= null;
+            User user = null;
             prepareStatement.setLong(1, id);
             var resultSet = prepareStatement.executeQuery();
             if (resultSet.next()) {
@@ -40,7 +48,7 @@ public class UserRepository {
     }
 
     @SneakyThrows
-    private Company createCompany(ResultSet resultSet){
+    private Company createCompany(ResultSet resultSet) {
         return Company.builder()
                 .id(resultSet.getLong("company_id"))
                 .name(resultSet.getString("company_name"))
