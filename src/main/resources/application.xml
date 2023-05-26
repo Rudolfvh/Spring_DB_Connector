@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                             http://www.springframework.org/schema/beans/spring-beans.xsd
+                             http://www.springframework.org/schema/context
+                             http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+
+    <context:property-placeholder location="application.properties"/>
+
+    <bean name="connectionManager" class="org.example.spring.database.ConnectionManager">
+        <constructor-arg name="url" value="${db.url}"/>
+        <constructor-arg name="username" value="${db.username}"/>
+        <constructor-arg name="password" value="${db.password}"/>
+    </bean>
+
+    <bean name="findUserById" class="java.lang.String">
+        <constructor-arg type="java.lang.String"
+                         value="SELECT u.id, u.username, u.email, c.id   AS company_id, c.name
+                         AS company_name FROM users u JOIN company c ON u.company_id = c.id WHERE u.id = ?;"/>
+    </bean>
+    <bean name="findCompanyById" class="java.lang.String">
+        <constructor-arg type="java.lang.String"
+                         value="SELECT c.id AS company_id, name AS company_name,
+                         array_to_string(ARRAY(SELECT id FROM users u WHERE u.company_id = c.id), ' ')
+                         AS users_id FROM company c WHERE c.id = ?;"/>
+    </bean>
+
+    <bean name="userRepository" class="org.example.spring.database.repository.UserRepository">
+        <constructor-arg name="connection" value="#{connectionManager.open()}"/>
+        <constructor-arg name="FIND_BY_ID" ref="findUserById"/>
+    </bean>
+    <bean name="companyRepository" class="org.example.spring.database.repository.CompanyRepository">
+        <constructor-arg name="connection" value="#{connectionManager.open()}"/>
+        <constructor-arg name="FIND_BY_ID" ref="findCompanyById"/>
+    </bean>
+
+    <bean name="companyMapper" class="org.example.spring.mapper.CompanyMapper"/>
+    <bean name="userMapper" class="org.example.spring.mapper.UserMapper">
+        <constructor-arg name="companyMapper" ref="companyMapper"/>
+    </bean>
+
+    <bean class="org.example.spring.service.UserService">
+        <constructor-arg name="userMapper" ref="userMapper"/>
+        <constructor-arg name="userRepository" ref="userRepository"/>
+    </bean>
+    <bean class="org.example.spring.service.CompanyService">
+        <constructor-arg name="companyMapper" ref="companyMapper"/>
+        <constructor-arg name="companyRepository" ref="companyRepository"/>
+    </bean>
+
+</beans>
